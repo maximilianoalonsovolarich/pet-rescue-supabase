@@ -1,8 +1,12 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFormik } from 'formik';
+import * as yup from 'yup';
+
+// Material UI
 import {
   Avatar,
   Button,
@@ -15,271 +19,98 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
-  Stepper,
-  Step,
-  StepLabel,
-  Stack
+  Divider,
+  useTheme,
+  useMediaQuery,
+  Checkbox,
+  FormControlLabel
 } from '@mui/material';
+
+// Icons
 import {
-  PersonAddAlt as PersonAddIcon,
+  PersonAdd as PersonAddIcon,
   Visibility,
   VisibilityOff,
   Email as EmailIcon,
   Person as PersonIcon,
-  Phone as PhoneIcon,
-  ArrowForward as ArrowForwardIcon,
-  ArrowBack as ArrowBackIcon
+  Lock as LockIcon
 } from '@mui/icons-material';
 
-const Register = () => {
-  const [activeStep, setActiveStep] = useState(0);
-  
-  // Form state
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  
-  // UI state
+// Validation schema
+const validationSchema = yup.object({
+  name: yup
+    .string()
+    .required('El nombre es requerido')
+    .min(3, 'El nombre debe tener al menos 3 caracteres'),
+  email: yup
+    .string()
+    .email('Ingresa un correo electrónico válido')
+    .required('El correo electrónico es requerido'),
+  password: yup
+    .string()
+    .required('La contraseña es requerida')
+    .min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  confirmPassword: yup
+    .string()
+    .oneOf([yup.ref('password')], 'Las contraseñas no coinciden')
+    .required('Debes confirmar la contraseña'),
+  agreeToTerms: yup
+    .boolean()
+    .oneOf([true], 'Debes aceptar los términos y condiciones')
+});
+
+export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState('');
   
   const { signUp } = useAuth();
   const router = useRouter();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
-  // Password visibility toggle
+  const formik = useFormik({
+    initialValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      agreeToTerms: false
+    },
+    validationSchema: validationSchema,
+    onSubmit: async (values, { setSubmitting }) => {
+      try {
+        setError('');
+        setSuccess('');
+        
+        await signUp(values.email, values.password, values.name);
+        
+        setSuccess('¡Registro exitoso! Redireccionando al tablero...');
+        
+        // Redirect after a short delay to show success message
+        setTimeout(() => {
+          router.push('/dashboard');
+        }, 1500);
+      } catch (error: any) {
+        const errorMessage = error.message || 'Error durante el registro';
+        
+        if (errorMessage.includes('already exists')) {
+          setError('Este correo electrónico ya está registrado. Por favor intenta con otro.');
+        } else {
+          setError(errorMessage);
+        }
+      } finally {
+        setSubmitting(false);
+      }
+    },
+  });
+  
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
   };
   
-  // Handle form step navigation
-  const handleNext = () => {
-    // Validate first step
-    if (activeStep === 0) {
-      if (!name || !email) {
-        setError('Por favor complete todos los campos obligatorios');
-        return;
-      }
-      
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        setError('Por favor ingrese un email válido');
-        return;
-      }
-    }
-    
-    // Validate second step
-    if (activeStep === 1) {
-      if (!password || !confirmPassword) {
-        setError('Por favor complete todos los campos obligatorios');
-        return;
-      }
-      
-      if (password.length < 6) {
-        setError('La contraseña debe tener al menos 6 caracteres');
-        return;
-      }
-      
-      if (password !== confirmPassword) {
-        setError('Las contraseñas no coinciden');
-        return;
-      }
-    }
-    
-    setError('');
-    setActiveStep((prevStep) => prevStep + 1);
-  };
-  
-  const handleBack = () => {
-    setActiveStep((prevStep) => prevStep - 1);
-  };
-  
-  // Submit the form
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    
-    if (!name || !email || !password || !confirmPassword) {
-      return setError('Por favor complete todos los campos obligatorios');
-    }
-    
-    if (password !== confirmPassword) {
-      return setError('Las contraseñas no coinciden');
-    }
-    
-    if (password.length < 6) {
-      return setError('La contraseña debe tener al menos 6 caracteres');
-    }
-    
-    try {
-      setError('');
-      setLoading(true);
-      
-      // Register with supabase and create profile
-      await signUp(email, password, name);
-      
-      // Successfully registered
-      setActiveStep(3); // Move to success step
-    } catch (error: any) {
-      console.error('Error al registrar:', error);
-      let message = 'Error al registrar usuario';
-      
-      if (error?.message?.includes('User already registered')) {
-        message = 'El email ya está registrado';
-      }
-      
-      setError(message);
-      setActiveStep(0); // Go back to first step on error
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Redirect to dashboard after registration
-  const handleContinue = () => {
-    router.push('/login');
-  };
-  
-  // Form steps content
-  const steps = [
-    {
-      label: 'Información Personal',
-      content: (
-        <>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="name"
-            label="Nombre Completo"
-            name="name"
-            autoComplete="name"
-            autoFocus
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <PersonIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Correo Electrónico"
-            name="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <EmailIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
-        </>
-      )
-    },
-    {
-      label: 'Contraseña',
-      content: (
-        <>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Contraseña"
-            type={showPassword ? 'text' : 'password'}
-            id="password"
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    aria-label="toggle password visibility"
-                    onClick={handleClickShowPassword}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="confirmPassword"
-            label="Confirmar Contraseña"
-            type={showPassword ? 'text' : 'password'}
-            id="confirmPassword"
-            autoComplete="new-password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-        </>
-      )
-    },
-    {
-      label: 'Información de Contacto',
-      content: (
-        <>
-          <TextField
-            margin="normal"
-            fullWidth
-            name="phone"
-            label="Teléfono (opcional)"
-            id="phone"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <PhoneIcon color="primary" />
-                </InputAdornment>
-              ),
-            }}
-          />
-          <Alert severity="info" sx={{ mt: 2 }}>
-            El teléfono es opcional pero permitirá a otros usuarios contactarte más fácilmente si publicas una mascota.
-          </Alert>
-        </>
-      )
-    },
-    {
-      label: 'Confirmación',
-      content: (
-        <Box sx={{ textAlign: 'center' }}>
-          <Avatar sx={{ m: 1, bgcolor: 'success.main', mx: 'auto', width: 56, height: 56 }}>
-            <PersonAddIcon fontSize="large" />
-          </Avatar>
-          <Typography variant="h5" gutterBottom sx={{ mt: 2 }}>
-            ¡Registro exitoso!
-          </Typography>
-          <Typography variant="body1" sx={{ mb: 3 }}>
-            Tu cuenta ha sido creada correctamente. Se envió un email de verificación a {email}.
-          </Typography>
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Revisa tu bandeja de entrada para activar tu cuenta y luego inicia sesión.
-          </Alert>
-        </Box>
-      )
-    }
-  ];
-  
   return (
-    <Grid container component="main" sx={{ minHeight: '100vh' }}>
+    <Grid container component="main" sx={{ height: { xs: 'auto', sm: '80vh' }, minHeight: { xs: '100vh', sm: '600px' } }}>
       <Grid
         item
         xs={false}
@@ -290,19 +121,10 @@ const Register = () => {
           display: { xs: 'none', sm: 'block' }
         }}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 0
-          }}
-        >
+        <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
           <Image
             src="https://source.unsplash.com/random?animals"
-            alt="Mascotas"
+            alt="Animals"
             fill
             style={{ objectFit: 'cover' }}
             priority
@@ -312,37 +134,37 @@ const Register = () => {
               position: 'absolute',
               top: 0,
               left: 0,
-              width: '100%',
-              height: '100%',
+              right: 0,
+              bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.3)',
               zIndex: 1
             }}
           />
-        </Box>
-        <Box
-          sx={{
-            position: 'relative',
-            zIndex: 2,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            color: 'white',
-            padding: 4
-          }}
-        >
-          <Typography variant="h3" component="h1" sx={{ mb: 2, fontWeight: 700 }}>
-            ¡Únete a Pet Rescue!
-          </Typography>
-          <Typography variant="h6" sx={{ maxWidth: 500 }}>
-            Regístrate para ayudar a mascotas callejeras o perdidas a encontrar un hogar.
-          </Typography>
+          <Box
+            sx={{
+              position: 'relative',
+              zIndex: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              color: 'white',
+              padding: 4
+            }}
+          >
+            <Typography variant="h3" component="h1" sx={{ mb: 2, fontWeight: 700 }}>
+              Únete a Pet Rescue
+            </Typography>
+            <Typography variant="h6" sx={{ maxWidth: 500 }}>
+              Crea una cuenta para ayudar a mascotas perdidas o callejeras a encontrar un hogar.
+            </Typography>
+          </Box>
         </Box>
       </Grid>
-      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
+      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square sx={{ py: 2 }}>
         <Box
           sx={{
-            my: 8,
+            my: 4,
             mx: 4,
             display: 'flex',
             flexDirection: 'column',
@@ -352,94 +174,167 @@ const Register = () => {
           <Avatar sx={{ m: 1, bgcolor: 'primary.main', width: 56, height: 56 }}>
             <PersonAddIcon fontSize="large" />
           </Avatar>
-          <Typography component="h1" variant="h5" sx={{ mt: 2, mb: 4 }}>
-            Registro
+          <Typography component="h1" variant="h5" sx={{ mt: 2 }}>
+            Registro de Usuario
           </Typography>
           
-          <Stepper activeStep={activeStep} alternativeLabel sx={{ width: '100%', mb: 4 }}>
-            {steps.map((step) => (
-              <Step key={step.label}>
-                <StepLabel>{step.label}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
-          
           {error && (
-            <Alert severity="error" sx={{ mb: 3, width: '100%' }}>
+            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
               {error}
             </Alert>
           )}
           
-          <Box component="form" noValidate onSubmit={handleSubmit} sx={{ width: '100%' }}>
-            {/* Form content for each step */}
-            {steps[activeStep].content}
-            
-            {/* Navigation buttons */}
-            <Stack direction="row" spacing={2} justifyContent="space-between" sx={{ mt: 3 }}>
-              {activeStep > 0 && activeStep < 3 && (
-                <Button
-                  variant="outlined"
-                  onClick={handleBack}
-                  disabled={loading}
-                  startIcon={<ArrowBackIcon />}
-                >
-                  Atrás
-                </Button>
-              )}
-              
-              {activeStep < 2 && (
-                <Button
-                  variant="contained"
-                  onClick={handleNext}
-                  disabled={loading}
-                  sx={{ ml: 'auto' }}
-                  endIcon={<ArrowForwardIcon />}
-                >
-                  Siguiente
-                </Button>
-              )}
-              
-              {activeStep === 2 && (
-                <Button
-                  type="submit"
-                  variant="contained"
-                  disabled={loading}
-                  sx={{ ml: 'auto' }}
-                  endIcon={loading ? <CircularProgress size={20} /> : <PersonAddIcon />}
-                >
-                  {loading ? 'Registrando...' : 'Registrarse'}
-                </Button>
-              )}
-              
-              {activeStep === 3 && (
-                <Button
-                  variant="contained"
-                  onClick={handleContinue}
+          {success && (
+            <Alert severity="success" sx={{ mt: 2, width: '100%' }}>
+              {success}
+            </Alert>
+          )}
+          
+          <Box component="form" noValidate onSubmit={formik.handleSubmit} sx={{ mt: 3, width: '100%' }}>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <TextField
                   fullWidth
-                  color="primary"
-                >
-                  Ir a iniciar sesión
-                </Button>
-              )}
-            </Stack>
-            
-            {/* Login link */}
-            {activeStep < 3 && (
-              <Grid container justifyContent="flex-end" sx={{ mt: 2 }}>
-                <Grid item>
-                  <Link href="/login" style={{ textDecoration: 'none' }}>
-                    <Typography variant="body2" color="primary">
-                      {"¿Ya tienes una cuenta? Inicia sesión"}
-                    </Typography>
-                  </Link>
-                </Grid>
+                  id="name"
+                  name="name"
+                  label="Nombre Completo"
+                  autoComplete="name"
+                  value={formik.values.name}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.name && Boolean(formik.errors.name)}
+                  helperText={formik.touched.name && formik.errors.name}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
               </Grid>
-            )}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="email"
+                  name="email"
+                  label="Correo Electrónico"
+                  autoComplete="email"
+                  value={formik.values.email}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.email && Boolean(formik.errors.email)}
+                  helperText={formik.touched.email && formik.errors.email}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="password"
+                  name="password"
+                  label="Contraseña"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={formik.values.password}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.password && Boolean(formik.errors.password)}
+                  helperText={formik.touched.password && formik.errors.password}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon />
+                      </InputAdornment>
+                    ),
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={handleClickShowPassword}
+                          edge="end"
+                        >
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  label="Confirmar Contraseña"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  value={formik.values.confirmPassword}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
+                  helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <LockIcon />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      id="agreeToTerms"
+                      name="agreeToTerms"
+                      color="primary"
+                      checked={formik.values.agreeToTerms}
+                      onChange={formik.handleChange}
+                    />
+                  }
+                  label={
+                    <Typography variant="body2">
+                      Acepto los términos y condiciones de servicio
+                    </Typography>
+                  }
+                />
+                {formik.touched.agreeToTerms && formik.errors.agreeToTerms && (
+                  <Typography variant="caption" color="error">
+                    {formik.errors.agreeToTerms}
+                  </Typography>
+                )}
+              </Grid>
+            </Grid>
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2, py: 1.5 }}
+              disabled={formik.isSubmitting}
+              startIcon={formik.isSubmitting ? <CircularProgress size={20} /> : null}
+            >
+              {formik.isSubmitting ? 'Registrando...' : 'Registrarse'}
+            </Button>
           </Box>
+          
+          <Divider sx={{ width: '100%', my: 2 }} />
+            
+          <Typography variant="body2" color="text.secondary">
+            ¿Ya tienes una cuenta?{' '}
+            <Link href="/login" style={{ textDecoration: 'none', color: theme.palette.primary.main, fontWeight: 600 }}>
+              Inicia sesión aquí
+            </Link>
+          </Typography>
         </Box>
       </Grid>
     </Grid>
   );
-};
-
-export default Register;
+}
