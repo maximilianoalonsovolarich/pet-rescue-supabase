@@ -58,3 +58,19 @@ next-env.d.ts
 
 # Cache
 .cache/
+
+# Windows specific files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Local Development
+*.log
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Supabase specific
+/supabase/.temp.*
+supabase/.branches
+supabase/seed.sql
