@@ -1,40 +1,36 @@
 import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
-import { Poppins } from 'next/font/google';
 import { useRouter } from 'next/router';
-import MainLayout from '@/components/layouts/MainLayout';
-import AdminLayout from '@/components/layouts/AdminLayout';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { CustomThemeProvider } from '@/contexts/ThemeContext';
 import Head from 'next/head';
 
-// Configure Poppins font
-const poppins = Poppins({
-  weight: ['300', '400', '500', '600', '700'],
-  subsets: ['latin'],
-  display: 'swap',
-});
+// Providers
+import { CustomThemeProvider } from '@/contexts/ThemeContext';
+import { AuthProvider } from '@/contexts/AuthContext';
+
+// Layouts
+import MainLayout from '@/components/layouts/MainLayout';
+import AdminLayout from '@/components/layouts/AdminLayout';
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const isAdminPage = router.pathname.startsWith('/admin');
+  const isAdminRoute = router.pathname.startsWith('/admin');
 
   return (
     <>
       <Head>
-        <title>Pet Rescue - Ayuda a mascotas callejeras</title>
-        <meta name="description" content="Aplicación para ayudar a mascotas callejeras o perdidas" />
+        <title>Pet Rescue</title>
+        <meta name="description" content="Aplicación para rescate y adopción de mascotas" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+        />
       </Head>
-      <style jsx global>{`
-        html {
-          font-family: ${poppins.style.fontFamily};
-        }
-      `}</style>
+      
       <CustomThemeProvider>
         <AuthProvider>
-          {isAdminPage ? (
+          {isAdminRoute ? (
             <AdminLayout>
               <Component {...pageProps} />
             </AdminLayout>
