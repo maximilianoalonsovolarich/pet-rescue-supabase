@@ -11,20 +11,26 @@
   --secondary-dark: #c51162;
 }
 
-html, body {
-  margin: 0;
+html,
+body {
   padding: 0;
-  height: 100%;
-  width: 100%;
+  margin: 0;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+  min-height: 100vh;
   scroll-behavior: smooth;
-  overflow-x: hidden;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
 }
 
 * {
   box-sizing: border-box;
 }
 
-/* Leaflet map container */
+/* Leaflet Styles */
 .leaflet-container {
   width: 100%;
   height: 100%;
@@ -43,13 +49,7 @@ html, body {
   background-image: none !important;
 }
 
-/* Link reset */
-a {
-  text-decoration: none;
-  color: inherit;
-}
-
-/* Improved scrollbars */
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -69,7 +69,7 @@ a {
   background: rgba(0, 0, 0, 0.3);
 }
 
-/* Animations and transitions */
+/* Animations */
 .pet-card-transition {
   transition: all 0.3s ease-in-out;
 }
@@ -111,45 +111,35 @@ a {
   transform: scale(1.03);
 }
 
-/* Image hover effects */
-.img-hover-zoom {
-  overflow: hidden;
-}
-
-.img-hover-zoom img {
-  transition: transform 0.5s ease;
-}
-
-.img-hover-zoom img:hover {
-  transform: scale(1.05);
-}
-
-/* Custom focus styles for better accessibility */
-.MuiButtonBase-root:focus-visible {
-  outline: 2px solid #3f51b5;
-  outline-offset: 2px;
-}
-
-/* Section headings */
-.section-heading {
+/* Form and control styles */
+.input-with-icon {
+  padding-left: 40px;
   position: relative;
-  padding-bottom: 10px;
-  margin-bottom: 20px;
 }
 
-.section-heading::after {
-  content: "";
+.input-icon {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 50px;
-  height: 3px;
-  background-color: #3f51b5;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #777;
 }
 
-/* Custom card styles */
-.gradient-card {
-  background-image: linear-gradient(135deg, #6b73ff 10%, #000dff 100%);
-  color: white;
-  border-radius: 16px;
+/* Skeleton loading animation */
+@keyframes pulse {
+  0% {
+    background-color: rgba(190, 190, 190, 0.1);
+  }
+  50% {
+    background-color: rgba(190, 190, 190, 0.3);
+  }
+  100% {
+    background-color: rgba(190, 190, 190, 0.1);
+  }
+}
+
+.skeleton-pulse {
+  animation: pulse 1.5s infinite;
+  background-color: rgba(190, 190, 190, 0.2);
+  border-radius: 4px;
 }
