@@ -1,12 +1,9 @@
-import { useState } from 'react';
-import { useRouter } from 'next/router';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
+import { useRouter } from 'next/router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFormik } from 'formik';
-import * as yup from 'yup';
-
-// Material UI
+import * as Yup from 'yup';
 import {
   Avatar,
   Button,
@@ -19,186 +16,157 @@ import {
   InputAdornment,
   IconButton,
   CircularProgress,
-  Divider,
-  useTheme,
-  useMediaQuery,
-  Checkbox,
-  FormControlLabel
+  Card,
+  Fade,
+  useTheme
 } from '@mui/material';
-
-// Icons
 import {
-  PersonAdd as PersonAddIcon,
+  PersonAddAlt as PersonAddIcon,
   Visibility,
   VisibilityOff,
   Email as EmailIcon,
   Person as PersonIcon,
-  Lock as LockIcon
+  Phone as PhoneIcon
 } from '@mui/icons-material';
 
 // Validation schema
-const validationSchema = yup.object({
-  name: yup
-    .string()
-    .required('El nombre es requerido')
-    .min(3, 'El nombre debe tener al menos 3 caracteres'),
-  email: yup
-    .string()
-    .email('Ingresa un correo electrónico válido')
-    .required('El correo electrónico es requerido'),
-  password: yup
-    .string()
-    .required('La contraseña es requerida')
-    .min(6, 'La contraseña debe tener al menos 6 caracteres'),
-  confirmPassword: yup
-    .string()
-    .oneOf([yup.ref('password')], 'Las contraseñas no coinciden')
-    .required('Debes confirmar la contraseña'),
-  agreeToTerms: yup
-    .boolean()
-    .oneOf([true], 'Debes aceptar los términos y condiciones')
+const registerSchema = Yup.object({
+  name: Yup.string()
+    .min(2, 'El nombre debe tener al menos 2 caracteres')
+    .required('El nombre es requerido'),
+  email: Yup.string()
+    .email('Email inválido')
+    .required('El email es requerido'),
+  phone: Yup.string()
+    .matches(/^[0-9\s+\-()]{8,15}$/, 'Número de teléfono inválido')
+    .nullable(),
+  password: Yup.string()
+    .min(6, 'La contraseña debe tener al menos 6 caracteres')
+    .required('La contraseña es requerida'),
+  confirmPassword: Yup.string()
+    .oneOf([Yup.ref('password')], 'Las contraseñas no coinciden')
+    .required('La confirmación de contraseña es requerida'),
 });
 
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  const { signUp } = useAuth();
+  const [registerError, setRegisterError] = useState('');
+  const { signUp, user } = useAuth();
   const router = useRouter();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
+  useEffect(() => {
+    // If user is already logged in, redirect to dashboard
+    if (user) {
+      router.push('/dashboard');
+    }
+  }, [user, router]);
+
   const formik = useFormik({
     initialValues: {
       name: '',
       email: '',
+      phone: '',
       password: '',
       confirmPassword: '',
-      agreeToTerms: false
     },
-    validationSchema: validationSchema,
-    onSubmit: async (values, { setSubmitting }) => {
+    validationSchema: registerSchema,
+    onSubmit: async (values) => {
       try {
-        setError('');
-        setSuccess('');
-        
+        setRegisterError('');
         await signUp(values.email, values.password, values.name);
-        
-        setSuccess('¡Registro exitoso! Redireccionando al tablero...');
-        
-        // Redirect after a short delay to show success message
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1500);
+        router.push('/dashboard');
       } catch (error: any) {
-        const errorMessage = error.message || 'Error durante el registro';
-        
-        if (errorMessage.includes('already exists')) {
-          setError('Este correo electrónico ya está registrado. Por favor intenta con otro.');
+        console.error('Register error:', error);
+        if (error.message?.includes('already exists')) {
+          setRegisterError('El email ya está registrado');
         } else {
-          setError(errorMessage);
+          setRegisterError('Error al registrar usuario. Por favor intenta nuevamente.');
         }
-      } finally {
-        setSubmitting(false);
       }
     },
   });
-  
+
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
   };
-  
+
   return (
-    <Grid container component="main" sx={{ height: { xs: 'auto', sm: '80vh' }, minHeight: { xs: '100vh', sm: '600px' } }}>
+    <Grid container component="main" sx={{ minHeight: '100vh' }}>
       <Grid
         item
         xs={false}
-        sm={4}
+        sm={false}
         md={7}
+        lg={8}
         sx={{
+          backgroundImage: 'url(https://source.unsplash.com/collection/542909/1920x1080?pets)',
+          backgroundRepeat: 'no-repeat',
+          backgroundColor: (t) =>
+            t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
           position: 'relative',
-          display: { xs: 'none', sm: 'block' }
+          display: { xs: 'none', md: 'block' },
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
+            zIndex: 1
+          },
         }}
-      >
-        <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
-          <Image
-            src="https://source.unsplash.com/random?animals"
-            alt="Animals"
-            fill
-            style={{ objectFit: 'cover' }}
-            priority
-          />
-          <Box
-            sx={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0, 0, 0, 0.3)',
-              zIndex: 1
-            }}
-          />
-          <Box
-            sx={{
-              position: 'relative',
-              zIndex: 2,
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              color: 'white',
-              padding: 4
-            }}
-          >
-            <Typography variant="h3" component="h1" sx={{ mb: 2, fontWeight: 700 }}>
-              Únete a Pet Rescue
-            </Typography>
-            <Typography variant="h6" sx={{ maxWidth: 500 }}>
-              Crea una cuenta para ayudar a mascotas perdidas o callejeras a encontrar un hogar.
-            </Typography>
-          </Box>
-        </Box>
-      </Grid>
-      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square sx={{ py: 2 }}>
+      />
+      <Grid item xs={12} sm={12} md={5} lg={4} component={Paper} elevation={0} square>
         <Box
           sx={{
-            my: 4,
+            my: 8,
             mx: 4,
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%'
           }}
         >
-          <Avatar sx={{ m: 1, bgcolor: 'primary.main', width: 56, height: 56 }}>
-            <PersonAddIcon fontSize="large" />
-          </Avatar>
-          <Typography component="h1" variant="h5" sx={{ mt: 2 }}>
-            Registro de Usuario
-          </Typography>
-          
-          {error && (
-            <Alert severity="error" sx={{ mt: 2, width: '100%' }}>
-              {error}
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert severity="success" sx={{ mt: 2, width: '100%' }}>
-              {success}
-            </Alert>
-          )}
-          
-          <Box component="form" noValidate onSubmit={formik.handleSubmit} sx={{ mt: 3, width: '100%' }}>
-            <Grid container spacing={2}>
-              <Grid item xs={12}>
+          <Fade in={true} timeout={800}>
+            <Card 
+              sx={{ 
+                p: 4, 
+                maxWidth: 450, 
+                width: '100%',
+                boxShadow: theme.shadows[8],
+                borderRadius: 2
+              }}
+            >
+              <Box sx={{ mb: 3, textAlign: 'center' }}>
+                <Avatar sx={{ m: 1, bgcolor: 'primary.main', mx: 'auto', width: 56, height: 56 }}>
+                  <PersonAddIcon fontSize="large" />
+                </Avatar>
+                <Typography component="h1" variant="h5" sx={{ mt: 2, fontWeight: 600 }}>
+                  Crear Cuenta
+                </Typography>
+              </Box>
+              
+              {registerError && (
+                <Alert severity="error" sx={{ mb: 3 }}>
+                  {registerError}
+                </Alert>
+              )}
+              
+              <Box component="form" noValidate onSubmit={formik.handleSubmit}>
                 <TextField
+                  margin="normal"
+                  required
                   fullWidth
                   id="name"
-                  name="name"
                   label="Nombre Completo"
+                  name="name"
                   autoComplete="name"
+                  autoFocus
                   value={formik.values.name}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -207,18 +175,18 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <PersonIcon />
+                        <PersonIcon color="primary" />
                       </InputAdornment>
                     ),
                   }}
                 />
-              </Grid>
-              <Grid item xs={12}>
                 <TextField
+                  margin="normal"
+                  required
                   fullWidth
                   id="email"
-                  name="email"
                   label="Correo Electrónico"
+                  name="email"
                   autoComplete="email"
                   value={formik.values.email}
                   onChange={formik.handleChange}
@@ -228,19 +196,39 @@ export default function Register() {
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
-                        <EmailIcon />
+                        <EmailIcon color="primary" />
                       </InputAdornment>
                     ),
                   }}
                 />
-              </Grid>
-              <Grid item xs={12}>
                 <TextField
+                  margin="normal"
                   fullWidth
-                  id="password"
+                  id="phone"
+                  label="Teléfono (opcional)"
+                  name="phone"
+                  autoComplete="tel"
+                  value={formik.values.phone}
+                  onChange={formik.handleChange}
+                  onBlur={formik.handleBlur}
+                  error={formik.touched.phone && Boolean(formik.errors.phone)}
+                  helperText={formik.touched.phone && formik.errors.phone}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIcon color="primary" />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <TextField
+                  margin="normal"
+                  required
+                  fullWidth
                   name="password"
                   label="Contraseña"
                   type={showPassword ? 'text' : 'password'}
+                  id="password"
                   autoComplete="new-password"
                   value={formik.values.password}
                   onChange={formik.handleChange}
@@ -248,11 +236,6 @@ export default function Register() {
                   error={formik.touched.password && Boolean(formik.errors.password)}
                   helperText={formik.touched.password && formik.errors.password}
                   InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon />
-                      </InputAdornment>
-                    ),
                     endAdornment: (
                       <InputAdornment position="end">
                         <IconButton
@@ -266,73 +249,49 @@ export default function Register() {
                     ),
                   }}
                 />
-              </Grid>
-              <Grid item xs={12}>
                 <TextField
+                  margin="normal"
+                  required
                   fullWidth
-                  id="confirmPassword"
                   name="confirmPassword"
                   label="Confirmar Contraseña"
                   type={showPassword ? 'text' : 'password'}
+                  id="confirmPassword"
                   autoComplete="new-password"
                   value={formik.values.confirmPassword}
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
                   error={formik.touched.confirmPassword && Boolean(formik.errors.confirmPassword)}
                   helperText={formik.touched.confirmPassword && formik.errors.confirmPassword}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <LockIcon />
-                      </InputAdornment>
-                    ),
-                  }}
                 />
-              </Grid>
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      id="agreeToTerms"
-                      name="agreeToTerms"
-                      color="primary"
-                      checked={formik.values.agreeToTerms}
-                      onChange={formik.handleChange}
-                    />
-                  }
-                  label={
-                    <Typography variant="body2">
-                      Acepto los términos y condiciones de servicio
-                    </Typography>
-                  }
-                />
-                {formik.touched.agreeToTerms && formik.errors.agreeToTerms && (
-                  <Typography variant="caption" color="error">
-                    {formik.errors.agreeToTerms}
-                  </Typography>
-                )}
-              </Grid>
-            </Grid>
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              sx={{ mt: 3, mb: 2, py: 1.5 }}
-              disabled={formik.isSubmitting}
-              startIcon={formik.isSubmitting ? <CircularProgress size={20} /> : null}
-            >
-              {formik.isSubmitting ? 'Registrando...' : 'Registrarse'}
-            </Button>
-          </Box>
-          
-          <Divider sx={{ width: '100%', my: 2 }} />
-            
-          <Typography variant="body2" color="text.secondary">
-            ¿Ya tienes una cuenta?{' '}
-            <Link href="/login" style={{ textDecoration: 'none', color: theme.palette.primary.main, fontWeight: 600 }}>
-              Inicia sesión aquí
-            </Link>
-          </Typography>
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  sx={{ mt: 3, mb: 2, py: 1.5 }}
+                  disabled={formik.isSubmitting}
+                >
+                  {formik.isSubmitting ? (
+                    <>
+                      <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
+                      Registrando...
+                    </>
+                  ) : (
+                    'Registrarse'
+                  )}
+                </Button>
+                <Grid container justifyContent="center">
+                  <Grid item>
+                    <Link href="/login" style={{ textDecoration: 'none' }}>
+                      <Typography variant="body2" color="primary" fontWeight={500}>
+                        {"¿Ya tienes una cuenta? Inicia sesión"}
+                      </Typography>
+                    </Link>
+                  </Grid>
+                </Grid>
+              </Box>
+            </Card>
+          </Fade>
         </Box>
       </Grid>
     </Grid>
