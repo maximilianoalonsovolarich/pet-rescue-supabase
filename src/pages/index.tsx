@@ -1,58 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import { GetServerSideProps } from 'next';
+import { useState, useEffect } from 'react';
+import { GetStaticProps } from 'next';
 import Link from 'next/link';
-import { createServerSupabaseClient } from '@/lib/supabase';
+import Image from 'next/image';
+import { supabase } from '@/lib/supabase';
 import { Pet } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+
+// Components
 import PetCard from '@/components/pets/PetCard';
+
+// Material UI
 import {
   Box,
+  Container,
   Typography,
+  Button,
   Grid,
   Paper,
-  Button,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   TextField,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
   InputAdornment,
   Pagination,
   Chip,
   Stack,
-  Divider,
   Alert,
-  Skeleton,
+  Fade,
+  Divider,
   useTheme,
   useMediaQuery,
-  Fab,
-  Tooltip,
-  Container
+  IconButton,
+  Card,
+  CardContent
 } from '@mui/material';
+
+// Icons
 import {
   Search as SearchIcon,
   Pets as PetsIcon,
+  FilterAlt as FilterAltIcon,
   Add as AddIcon,
-  FilterList as FilterListIcon,
+  LocationOn as LocationIcon,
+  ArrowForward as ArrowForwardIcon
 } from '@mui/icons-material';
 
-type HomeProps = {
-  pets: Pet[];
-  petTypeCounts: {
-    [key: string]: number;
-  };
-};
-
+// Constants
 const ITEMS_PER_PAGE = 6;
 
-export default function Home({ pets, petTypeCounts }: HomeProps) {
+// Types
+interface HomeProps {
+  initialPets: Pet[];
+  petCountByType: {
+    type: string;
+    count: number;
+  }[];
+  totalPets: number;
+}
+
+export default function Home({ initialPets, petCountByType, totalPets }: HomeProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useAuth();
   
-  const [allPets, setAllPets] = useState<Pet[]>(pets);
-  const [filteredPets, setFilteredPets] = useState<Pet[]>(pets);
+  // State
+  const [pets, setPets] = useState<Pet[]>(initialPets);
+  const [filteredPets, setFilteredPets] = useState<Pet[]>(initialPets);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
@@ -60,19 +75,22 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
   const [petSize, setPetSize] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(!isMobile);
-  
-  // Filter pets when filters change
+
+  // Effect to filter pets
   useEffect(() => {
-    let result = [...allPets];
+    let result = [...pets];
     
+    // Filter by pet type
     if (petType) {
       result = result.filter(pet => pet.pet_type === petType);
     }
     
+    // Filter by pet size
     if (petSize) {
       result = result.filter(pet => pet.pet_size === petSize);
     }
     
+    // Filter by search term
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       result = result.filter(pet => 
@@ -83,38 +101,37 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
     }
     
     setFilteredPets(result);
-    setPage(1); // Reset to first page when filters change
-  }, [allPets, petType, petSize, searchTerm]);
-  
-  // Pagination calculations
+    setPage(1); // Reset page when filters change
+  }, [pets, petType, petSize, searchTerm]);
+
+  // Pagination
   const totalPages = Math.ceil(filteredPets.length / ITEMS_PER_PAGE);
   const paginatedPets = filteredPets.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
   );
-  
+
   // Handle page change
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
-    // Scroll to top of results
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  
+
   // Toggle filters display on mobile
   const toggleFilters = () => {
     setShowFilters(!showFilters);
   };
-  
+
   // Reset all filters
   const resetFilters = () => {
     setPetType('');
     setPetSize('');
     setSearchTerm('');
   };
-  
+
   return (
-    <Box sx={{ pb: 4 }}>
-      {/* Banner */}
+    <Box>
+      {/* Hero Banner */}
       <Paper
         sx={{
           position: 'relative',
@@ -131,14 +148,19 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '100%',
             height: '100%',
-            backgroundImage: 'url(https://source.unsplash.com/collection/542909/1600x900)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center 30%',
+            width: '100%',
             zIndex: 0
           }}
-        />
+        >
+          <Image
+            src="https://source.unsplash.com/collection/542909/1600x900"
+            alt="Mascotas"
+            fill
+            priority
+            style={{ objectFit: 'cover', objectPosition: 'center 30%' }}
+          />
+        </Box>
         <Box
           sx={{
             position: 'absolute',
@@ -231,7 +253,7 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
           <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               variant="outlined"
-              startIcon={<FilterListIcon />}
+              startIcon={<FilterAltIcon />}
               onClick={toggleFilters}
               sx={{ mb: 2 }}
             >
@@ -340,26 +362,24 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
                   <Stack spacing={1}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <Typography variant="body2" color="text.secondary">Total:</Typography>
-                      <Typography variant="body2" fontWeight={500}>{allPets.length} mascotas</Typography>
+                      <Typography variant="body2" fontWeight={500}>{totalPets} mascotas</Typography>
                     </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Perros:</Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {petTypeCounts.perro || 0}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Gatos:</Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {petTypeCounts.gato || 0}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <Typography variant="body2" color="text.secondary">Otros:</Typography>
-                      <Typography variant="body2" fontWeight={500}>
-                        {petTypeCounts.otros || 0}
-                      </Typography>
-                    </Box>
+                    {petCountByType.map((item) => (
+                      <Box 
+                        key={item.type} 
+                        sx={{ display: 'flex', justifyContent: 'space-between' }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          {item.type === 'perro' ? 'Perros' : 
+                          item.type === 'gato' ? 'Gatos' : 
+                          item.type === 'ave' ? 'Aves' : 
+                          item.type === 'conejo' ? 'Conejos' : 'Otros'}:
+                        </Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {item.count}
+                        </Typography>
+                      </Box>
+                    ))}
                   </Stack>
                 </Box>
               </Paper>
@@ -390,7 +410,10 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
               <Grid container spacing={3}>
                 {[...Array(6)].map((_, index) => (
                   <Grid item key={index} xs={12} sm={6} md={4}>
-                    <PetCard pet={{} as Pet} isLoading={true} />
+                    <PetCard 
+                      pet={{} as Pet}
+                      isLoading={true}
+                    />
                   </Grid>
                 ))}
               </Grid>
@@ -402,7 +425,10 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
                 <Grid container spacing={3}>
                   {paginatedPets.map((pet, index) => (
                     <Grid item key={pet.id} xs={12} sm={6} md={isTablet ? 6 : 4}>
-                      <PetCard pet={pet} />
+                      <PetCard 
+                        pet={pet} 
+                        withActions 
+                      />
                     </Grid>
                   ))}
                 </Grid>
@@ -448,72 +474,194 @@ export default function Home({ pets, petTypeCounts }: HomeProps) {
             )}
           </Grid>
         </Grid>
-      </Container>
-      
-      {/* Floating action button for mobile to add a new pet */}
-      {user && isMobile && (
-        <Tooltip title="Publicar nueva mascota">
-          <Fab
-            component={Link}
-            href="/pets/create"
-            color="secondary"
-            aria-label="add pet"
-            sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 1000 }}
+        
+        {/* Features section */}
+        <Box sx={{ my: 8, py: 4 }}>
+          <Typography 
+            variant="h4" 
+            component="h2" 
+            textAlign="center" 
+            gutterBottom
+            sx={{ fontWeight: 600, mb: 2 }}
           >
-            <AddIcon />
-          </Fab>
-        </Tooltip>
-      )}
+            ¿Cómo funciona?
+          </Typography>
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            textAlign="center" 
+            sx={{ mb: 6, maxWidth: 700, mx: 'auto' }}
+          >
+            Pet Rescue te permite publicar información de mascotas perdidas o callejeras para 
+            ayudarlas a encontrar un hogar o reunirse con sus dueños.
+          </Typography>
+          
+          <Grid container spacing={4}>
+            <Grid item xs={12} md={4}>
+              <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 2 }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                  <Box 
+                    sx={{ 
+                      bgcolor: 'primary.main', 
+                      width: 80, 
+                      height: 80, 
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 3,
+                      mx: 'auto'
+                    }}
+                  >
+                    <AddIcon sx={{ fontSize: 40, color: 'white' }} />
+                  </Box>
+                  <Typography variant="h6" gutterBottom fontWeight={600}>
+                    Publica información
+                  </Typography>
+                  <Typography variant="body2">
+                    Comparte detalles, fotos y ubicación de la mascota que encontraste o perdiste
+                    para aumentar las posibilidades de que sea reconocida.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} md={4}>
+              <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 2 }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                  <Box 
+                    sx={{ 
+                      bgcolor: 'secondary.main', 
+                      width: 80, 
+                      height: 80, 
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 3,
+                      mx: 'auto'
+                    }}
+                  >
+                    <PetsIcon sx={{ fontSize: 40, color: 'white' }} />
+                  </Box>
+                  <Typography variant="h6" gutterBottom fontWeight={600}>
+                    Conecta con otros
+                  </Typography>
+                  <Typography variant="body2">
+                    La comunidad de Pet Rescue puede ayudar a identificar y localizar mascotas
+                    perdidas o encontrar un hogar para animales callejeros.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+            
+            <Grid item xs={12} md={4}>
+              <Card sx={{ height: '100%', borderRadius: 2, boxShadow: 2 }}>
+                <CardContent sx={{ p: 4, textAlign: 'center' }}>
+                  <Box 
+                    sx={{ 
+                      bgcolor: 'success.main', 
+                      width: 80, 
+                      height: 80, 
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 3,
+                      mx: 'auto'
+                    }}
+                  >
+                    <LocationIcon sx={{ fontSize: 40, color: 'white' }} />
+                  </Box>
+                  <Typography variant="h6" gutterBottom fontWeight={600}>
+                    Encuentra ubicaciones
+                  </Typography>
+                  <Typography variant="body2">
+                    Utiliza los mapas interactivos para localizar dónde fue vista por última vez
+                    la mascota o dónde se encuentra actualmente.
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </Box>
+        
+        {/* CTA section */}
+        <Paper 
+          elevation={3}
+          sx={{ 
+            p: 6, 
+            my: 6, 
+            textAlign: 'center',
+            borderRadius: 3,
+            background: 'linear-gradient(135deg, #3f51b5 30%, #303f9f 90%)',
+            color: 'white'
+          }}
+        >
+          <Typography variant="h4" gutterBottom fontWeight={600}>
+            Únete a nuestra comunidad
+          </Typography>
+          <Typography variant="body1" paragraph sx={{ maxWidth: 700, mx: 'auto', mb: 4 }}>
+            Ayuda a mascotas necesitadas publicando información o adoptando un nuevo amigo.
+            Registrarse es gratis y solo toma unos minutos.
+          </Typography>
+          <Button
+            component={Link}
+            href={user ? "/pets/create" : "/register"}
+            variant="contained"
+            color="secondary"
+            size="large"
+            endIcon={<ArrowForwardIcon />}
+            sx={{ px: 4, py: 1.5, borderRadius: 2 }}
+          >
+            {user ? "Publicar Mascota" : "Registrarse Ahora"}
+          </Button>
+        </Paper>
+      </Container>
     </Box>
   );
 }
 
-export const getServerSideProps: GetServerSideProps = async (context) => {
-  const supabase = createServerSupabaseClient();
+export const getStaticProps: GetStaticProps = async () => {
+  // Fetch active pets
+  const { data: pets, error } = await supabase
+    .from('pets')
+    .select('*')
+    .eq('status', 'activo')
+    .order('created_at', { ascending: false })
+    .limit(24);
   
-  try {
-    // Get all active pets
-    const { data: pets, error } = await supabase
-      .from('pets')
-      .select(`
-        *,
-        profiles:user_id (name)
-      `)
-      .eq('status', 'activo')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    // Process the joined data to match our expected format
-    const processedPets = pets.map(pet => ({
-      ...pet,
-      user_name: pet.profiles?.name || 'Usuario',
-    }));
-    
-    // Count pets by type
-    const petTypeCounts = processedPets.reduce((acc: {[key: string]: number}, pet) => {
-      if (pet.pet_type === 'perro' || pet.pet_type === 'gato') {
-        acc[pet.pet_type] = (acc[pet.pet_type] || 0) + 1;
-      } else {
-        acc.otros = (acc.otros || 0) + 1;
-      }
-      return acc;
-    }, {});
-    
+  // Get count by pet type
+  const { data: petCountByType, error: countError } = await supabase
+    .from('pets')
+    .select('pet_type, count')
+    .eq('status', 'activo')
+    .group('pet_type');
+  
+  // Get total count
+  const { count: totalPets } = await supabase
+    .from('pets')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'activo');
+  
+  if (error || countError) {
+    console.error('Error fetching data:', error || countError);
     return {
       props: {
-        pets: processedPets,
-        petTypeCounts
-      }
-    };
-  } catch (error) {
-    console.error('Error fetching pets:', error);
-    
-    return {
-      props: {
-        pets: [],
-        petTypeCounts: {}
-      }
+        initialPets: [],
+        petCountByType: [],
+        totalPets: 0
+      },
+      revalidate: 60 // Revalidate at most once per minute
     };
   }
+  
+  return {
+    props: {
+      initialPets: pets || [],
+      petCountByType: petCountByType || [],
+      totalPets: totalPets || 0
+    },
+    revalidate: 60 // Revalidate at most once per minute
+  };
 };
