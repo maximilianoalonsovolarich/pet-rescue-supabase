@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useThemeContext } from '@/contexts/ThemeContext';
+
+// Material UI
 import {
   Avatar,
   Button,
@@ -17,9 +20,12 @@ import {
   useTheme,
   useMediaQuery,
   CircularProgress,
-  Stack,
-  Divider
+  Card,
+  FormControlLabel,
+  Checkbox
 } from '@mui/material';
+
+// Icons
 import {
   LockOutlined as LockOutlinedIcon,
   Visibility,
@@ -28,16 +34,18 @@ import {
   ArrowForward as ArrowForwardIcon
 } from '@mui/icons-material';
 
-const Login = () => {
+export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [remember, setRemember] = useState(false);
   
   const { signIn } = useAuth();
   const router = useRouter();
   const theme = useTheme();
+  const { darkMode } = useThemeContext();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -51,13 +59,17 @@ const Login = () => {
       setError('');
       setLoading(true);
       await signIn(email, password);
-      router.push('/dashboard');
+      
+      // Check for redirect param
+      const redirectPath = router.query.redirect as string;
+      router.push(redirectPath || '/dashboard');
     } catch (error: any) {
-      let message = 'Error al iniciar sesión';
-      if (error?.message?.includes('Invalid login credentials')) {
-        message = 'Email o contraseña incorrectos';
-      }
-      setError(message);
+      const errorMessage = error.message || 'Error al iniciar sesión';
+      setError(
+        errorMessage.includes('Invalid login') ? 
+          'Credenciales inválidas. Por favor verifique su email y contraseña.' : 
+          errorMessage
+      );
     } finally {
       setLoading(false);
     }
@@ -79,19 +91,10 @@ const Login = () => {
           display: { xs: 'none', sm: 'block' }
         }}
       >
-        <Box
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            zIndex: 0
-          }}
-        >
+        <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
           <Image
             src="https://source.unsplash.com/collection/542909/1600x900"
-            alt="Mascotas"
+            alt="Pets"
             fill
             style={{ objectFit: 'cover' }}
             priority
@@ -101,34 +104,34 @@ const Login = () => {
               position: 'absolute',
               top: 0,
               left: 0,
-              width: '100%',
-              height: '100%',
+              right: 0,
+              bottom: 0,
               backgroundColor: 'rgba(0, 0, 0, 0.3)',
               zIndex: 1
             }}
           />
-        </Box>
-        <Box
-          sx={{
-            position: 'relative',
-            zIndex: 2,
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            color: 'white',
-            padding: 4
-          }}
-        >
-          <Typography variant="h3" component="h1" sx={{ mb: 2, fontWeight: 700 }}>
-            Pet Rescue
-          </Typography>
-          <Typography variant="h6" sx={{ maxWidth: 500 }}>
-            Una plataforma para encontrar y ayudar a mascotas callejeras o perdidas.
-          </Typography>
+          <Box
+            sx={{
+              position: 'relative',
+              zIndex: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              color: 'white',
+              padding: 4
+            }}
+          >
+            <Typography variant="h3" component="h1" sx={{ mb: 2, fontWeight: 700 }}>
+              Pet Rescue
+            </Typography>
+            <Typography variant="h6" sx={{ maxWidth: 500 }}>
+              Una plataforma para encontrar y ayudar a mascotas callejeras o perdidas.
+            </Typography>
+          </Box>
         </Box>
       </Grid>
-      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
+      <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square sx={{ py: 2 }}>
         <Box
           sx={{
             my: 8,
@@ -196,6 +199,22 @@ const Login = () => {
                 ),
               }}
             />
+            
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <FormControlLabel
+                control={<Checkbox value="remember" color="primary" />}
+                label="Recordarme"
+                checked={remember}
+                onChange={(e, checked) => setRemember(checked)}
+              />
+              
+              <Link href="/forgot-password" style={{ textDecoration: 'none' }}>
+                <Typography variant="body2" color="primary">
+                  ¿Olvidaste tu contraseña?
+                </Typography>
+              </Link>
+            </Box>
+            
             <Button
               type="submit"
               fullWidth
@@ -207,44 +226,59 @@ const Login = () => {
               {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
             
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={2}
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ mt: 2 }}
-            >
-              <Link href="#" style={{ textDecoration: 'none' }}>
-                <Typography variant="body2" color="primary">
-                  ¿Olvidaste tu contraseña?
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12}>
+                <Typography 
+                  variant="body2" 
+                  align="center"
+                  color="text.secondary"
+                  sx={{ mb: 2 }}
+                >
+                  ¿No tienes una cuenta?{' '}
+                  <Link href="/register" style={{ textDecoration: 'none', color: theme.palette.primary.main, fontWeight: 600 }}>
+                    Regístrate aquí
+                  </Link>
                 </Typography>
-              </Link>
-              <Link href="/register" style={{ textDecoration: 'none' }}>
-                <Typography variant="body2" color="primary">
-                  {"¿No tienes una cuenta? Regístrate"}
-                </Typography>
-              </Link>
-            </Stack>
+              </Grid>
+            </Grid>
             
-            <Box mt={5}>
-              <Divider sx={{ my: 2 }}>
-                <Typography variant="caption" color="text.secondary">
-                  ACCESO DE DEMOSTRACIÓN
-                </Typography>
-              </Divider>
-              <Alert severity="info" sx={{ mt: 2 }}>
-                <Typography variant="body2" align="center">
-                  Para usuarios de demostración, utiliza:<br />
-                  <Box component="span" fontWeight="bold">codemaxon@gmail.com / admin123</Box><br />
-                  <em>Usuario con acceso administrativo.</em>
-                </Typography>
-              </Alert>
-            </Box>
+            <Card 
+              variant="outlined" 
+              sx={{ 
+                mt: 3, 
+                p: 2, 
+                bgcolor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                borderRadius: 2
+              }}
+            >
+              <Typography variant="body2" align="center" color="text.secondary">
+                Credenciales de demostración:
+              </Typography>
+              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    Usuario
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    usuario@ejemplo.com
+                  </Typography>
+                </Box>
+                <Box sx={{ textAlign: 'center' }}>
+                  <Typography variant="caption" display="block" color="text.secondary">
+                    Contraseña
+                  </Typography>
+                  <Typography variant="body2" fontWeight={500}>
+                    usuario123
+                  </Typography>
+                </Box>
+              </Box>
+              <Typography variant="caption" display="block" align="center" color="text.secondary" sx={{ mt: 1 }}>
+                Para acceso administrativo: <strong>codemaxon@gmail.com / admin123</strong>
+              </Typography>
+            </Card>
           </Box>
         </Box>
       </Grid>
     </Grid>
   );
-};
-
-export default Login;
+}
