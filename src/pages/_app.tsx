@@ -1,46 +1,32 @@
-import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
-import { useRouter } from 'next/router';
+import { useEffect } from 'react';
 import Head from 'next/head';
-
-// Providers
+import { useRouter } from 'next/router';
+import '../styles/globals.css';
 import { CustomThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 
-// Layouts
-import MainLayout from '@/components/layouts/MainLayout';
-import AdminLayout from '@/components/layouts/AdminLayout';
-
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const isAdminRoute = router.pathname.startsWith('/admin');
+
+  // Apply custom styles for authenticated pages
+  useEffect(() => {
+    document.body.classList.toggle('authenticated', router.pathname !== '/login' && router.pathname !== '/register');
+  }, [router.pathname]);
 
   return (
     <>
       <Head>
-        <title>Pet Rescue</title>
-        <meta name="description" content="Aplicación para rescate y adopción de mascotas" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Pet Rescue</title>
+        <meta name="description" content="Aplicación para ayudar a mascotas callejeras a encontrar un hogar" />
         <link rel="icon" href="/favicon.ico" />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        />
       </Head>
-      
-      <CustomThemeProvider>
-        <AuthProvider>
-          {isAdminRoute ? (
-            <AdminLayout>
-              <Component {...pageProps} />
-            </AdminLayout>
-          ) : (
-            <MainLayout>
-              <Component {...pageProps} />
-            </MainLayout>
-          )}
-        </AuthProvider>
-      </CustomThemeProvider>
+      <AuthProvider>
+        <CustomThemeProvider>
+          <Component {...pageProps} />
+        </CustomThemeProvider>
+      </AuthProvider>
     </>
   );
 }
