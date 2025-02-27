@@ -20,7 +20,8 @@ import {
   useMediaQuery,
   CircularProgress,
   Card,
-  Fade
+  Fade,
+  Divider
 } from '@mui/material';
 import {
   LockOutlined as LockOutlinedIcon,
@@ -94,7 +95,7 @@ export default function Login() {
         md={7}
         lg={8}
         sx={{
-          backgroundImage: 'url(https://source.unsplash.com/collection/542909/1920x1080)',
+          backgroundImage: 'url(https://images.unsplash.com/photo-1548681528-6a5c45b66b42?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1600&h=900&q=80)',
           backgroundRepeat: 'no-repeat',
           backgroundColor: (t) =>
             t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
@@ -222,6 +223,15 @@ export default function Login() {
                     ),
                   }}
                 />
+                
+                <Box sx={{ textAlign: 'right', mt: 1 }}>
+                  <Link href="/forgot-password" style={{ textDecoration: 'none' }}>
+                    <Typography variant="body2" color="primary.main">
+                      ¿Olvidaste tu contraseña?
+                    </Typography>
+                  </Link>
+                </Box>
+                
                 <Button
                   type="submit"
                   fullWidth
@@ -232,8 +242,15 @@ export default function Login() {
                 >
                   {formik.isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                 </Button>
-                <Grid container spacing={1} alignItems="center" sx={{ mt: 2 }}>
-                  <Grid item xs={12} textAlign={isMobile ? "center" : "center"}>
+                
+                <Divider sx={{ my: 3 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    o
+                  </Typography>
+                </Divider>
+                
+                <Grid container spacing={1} alignItems="center">
+                  <Grid item xs={12} textAlign="center">
                     <Link href="/register" style={{ textDecoration: 'none' }}>
                       <Typography variant="body2" color="primary" fontWeight={500}>
                         {"¿No tienes una cuenta? Regístrate"}
@@ -241,6 +258,7 @@ export default function Login() {
                     </Link>
                   </Grid>
                 </Grid>
+                
                 <Box mt={4}>
                   <Alert severity="info" sx={{ mt: 2 }}>
                     <Typography variant="body2" align="center">

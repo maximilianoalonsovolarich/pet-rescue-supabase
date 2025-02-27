@@ -11,9 +11,10 @@ type AuthContextType = {
   session: Session | null;
   loading: boolean;
   error: AuthError | null;
-  signUp: (email: string, password: string, name: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, name: string) => Promise<{ user: User | null; session: Session | null; } | undefined>;
+  signIn: (email: string, password: string) => Promise<{ user: User | null; session: Session | null; } | undefined>;
   signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<boolean | void>;
   updateUserProfile: (data: Partial<Profile>) => Promise<void>;
   isAdmin: boolean;
 };
@@ -25,9 +26,10 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   error: null,
-  signUp: async () => {},
-  signIn: async () => {},
+  signUp: async () => undefined,
+  signIn: async () => undefined,
   signOut: async () => {},
+  resetPassword: async () => {},
   updateUserProfile: async () => {},
   isAdmin: false,
 });
@@ -187,6 +189,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Reset password (send password recovery email)
+  const resetPassword = async (email: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      
+      if (error) {
+        setError(error);
+        throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Reset password error:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Update user profile data
   const updateUserProfile = async (data: Partial<Profile>) => {
     try {
@@ -225,6 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
+    resetPassword,
     updateUserProfile,
     isAdmin,
   };

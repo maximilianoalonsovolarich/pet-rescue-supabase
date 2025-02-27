@@ -33,7 +33,8 @@ import {
   Tooltip,
   useTheme,
   useMediaQuery,
-  SelectChangeEvent
+  SelectChangeEvent,
+  Divider
 } from '@mui/material';
 import {
   Search as SearchIcon,
@@ -157,7 +158,7 @@ export default function HomePage({ initialPets }: HomePageProps) {
           }}
         >
           <Image
-            src="https://source.unsplash.com/collection/542909/1600x900"
+            src="https://images.unsplash.com/photo-1548681528-6a5c45b66b42?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1600&h=900&q=80"
             alt="Mascotas"
             fill
             priority
@@ -394,91 +395,91 @@ export default function HomePage({ initialPets }: HomePageProps) {
                 </Box>
               </Paper>
             </Grid>
+          )}
           
-            {/* Main content */}
-            <Grid item xs={12} md={9} order={{ xs: 1, md: 2 }}>
-              {/* Results header */}
-              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <Typography variant="h5" component="h2" fontWeight={600}>
-                  {filters.search || filters.pet_type || filters.pet_size || filters.pet_gender ? 'Resultados de búsqueda' : 'Mascotas disponibles'}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {totalPets} {totalPets === 1 ? 'mascota' : 'mascotas'}
-                </Typography>
-              </Box>
-              
-              {/* Error message */}
-              {error && (
-                <Alert severity="error" sx={{ mb: 4 }}>
-                  {error}
-                </Alert>
-              )}
-              
-              {/* Loading skeletons */}
-              {loading && (
+          {/* Main content */}
+          <Grid item xs={12} md={9} order={{ xs: 1, md: 2 }}>
+            {/* Results header */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="h5" component="h2" fontWeight={600}>
+                {filters.search || filters.pet_type || filters.pet_size || filters.pet_gender ? 'Resultados de búsqueda' : 'Mascotas disponibles'}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {totalPets} {totalPets === 1 ? 'mascota' : 'mascotas'}
+              </Typography>
+            </Box>
+            
+            {/* Error message */}
+            {error && (
+              <Alert severity="error" sx={{ mb: 4 }}>
+                {error}
+              </Alert>
+            )}
+            
+            {/* Loading skeletons */}
+            {loading && (
+              <Grid container spacing={3}>
+                {[...Array(6)].map((_, index) => (
+                  <Grid item key={index} xs={12} sm={6} md={isTablet ? 6 : 4}>
+                    <PetCard pet={{} as any} isLoading={true} />
+                  </Grid>
+                ))}
+              </Grid>
+            )}
+            
+            {/* Pet list */}
+            {!loading && pets.length > 0 && (
+              <>
                 <Grid container spacing={3}>
-                  {[...Array(6)].map((_, index) => (
-                    <Grid item key={index} xs={12} sm={6} md={isTablet ? 6 : 4}>
-                      <PetCard pet={{} as any} isLoading={true} />
+                  {pets.map((pet, index) => (
+                    <Grid item key={pet.id} xs={12} sm={6} md={isTablet ? 6 : 4}>
+                      <PetCard 
+                        pet={pet}
+                        onClick={() => router.push(`/pets/${pet.id}`)}
+                      />
                     </Grid>
                   ))}
                 </Grid>
-              )}
-              
-              {/* Pet list */}
-              {!loading && pets.length > 0 && (
-                <>
-                  <Grid container spacing={3}>
-                    {pets.map((pet, index) => (
-                      <Grid item key={pet.id} xs={12} sm={6} md={isTablet ? 6 : 4}>
-                        <PetCard 
-                          pet={pet}
-                          onClick={() => router.push(`/pets/${pet.id}`)}
-                        />
-                      </Grid>
-                    ))}
-                  </Grid>
-                  
-                  {/* Pagination */}
-                  {totalPages > 1 && (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
-                      <Pagination 
-                        count={totalPages} 
-                        page={page} 
-                        onChange={handleChangePage} 
-                        color="primary" 
-                        size={isMobile ? "medium" : "large"}
-                        showFirstButton
-                        showLastButton
-                      />
-                    </Box>
-                  )}
-                </>
-              )}
-              
-              {/* No results */}
-              {!loading && pets.length === 0 && (
-                <Paper sx={{ textAlign: 'center', py: 6, px: 3, borderRadius: 2 }}>
-                  <PetsIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
-                  <Typography variant="h5" gutterBottom>
-                    No se encontraron mascotas
-                  </Typography>
-                  <Typography variant="body1" color="text.secondary" paragraph>
-                    Intenta cambiar los filtros o publica una nueva mascota
-                  </Typography>
-                  <Button
-                    component={Link}
-                    href={user ? "/pets/create" : "/login"}
-                    variant="contained"
-                    color="primary"
-                    sx={{ mt: 2 }}
-                    startIcon={<AddIcon />}
-                  >
-                    {user ? "Publicar Mascota" : "Iniciar sesión para publicar"}
-                  </Button>
-                </Paper>
-              )}
-            </Grid>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4, mb: 2 }}>
+                    <Pagination 
+                      count={totalPages} 
+                      page={page} 
+                      onChange={handleChangePage} 
+                      color="primary" 
+                      size={isMobile ? "medium" : "large"}
+                      showFirstButton
+                      showLastButton
+                    />
+                  </Box>
+                )}
+              </>
+            )}
+            
+            {/* No results */}
+            {!loading && pets.length === 0 && (
+              <Paper sx={{ textAlign: 'center', py: 6, px: 3, borderRadius: 2 }}>
+                <PetsIcon sx={{ fontSize: 60, color: 'text.secondary', mb: 2 }} />
+                <Typography variant="h5" gutterBottom>
+                  No se encontraron mascotas
+                </Typography>
+                <Typography variant="body1" color="text.secondary" paragraph>
+                  Intenta cambiar los filtros o publica una nueva mascota
+                </Typography>
+                <Button
+                  component={Link}
+                  href={user ? "/pets/create" : "/login"}
+                  variant="contained"
+                  color="primary"
+                  sx={{ mt: 2 }}
+                  startIcon={<AddIcon />}
+                >
+                  {user ? "Publicar Mascota" : "Iniciar sesión para publicar"}
+                </Button>
+              </Paper>
+            )}
           </Grid>
         </Grid>
       </Container>
