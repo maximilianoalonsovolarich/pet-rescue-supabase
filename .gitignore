@@ -74,3 +74,6 @@ Desktop.ini
 /supabase/.temp.*
 supabase/.branches
 supabase/seed.sql
+
+# Lock files
+package-lock.json

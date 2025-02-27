@@ -5,6 +5,8 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
+import EnvDebug from '@/components/debug/EnvDebug';
+import { supabase } from '@/lib/supabase';
 import {
   Avatar,
   Button,
@@ -21,14 +23,17 @@ import {
   CircularProgress,
   Card,
   Fade,
-  Divider
+  Divider,
+  Switch,
+  FormControlLabel,
 } from '@mui/material';
 import {
   LockOutlined as LockOutlinedIcon,
   Visibility,
   VisibilityOff,
   Email as EmailIcon,
-  ArrowForward as ArrowForwardIcon
+  ArrowForward as ArrowForwardIcon,
+  BugReport as BugReportIcon,
 } from '@mui/icons-material';
 
 // Validation schema
@@ -44,6 +49,8 @@ const loginSchema = Yup.object({
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [loginResponse, setLoginResponse] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
   const { signIn, user, loading: authLoading } = useAuth();
   const router = useRouter();
   const theme = useTheme();
@@ -65,14 +72,64 @@ export default function Login() {
     onSubmit: async (values) => {
       try {
         setLoginError('');
-        await signIn(values.email, values.password);
+        setLoginResponse(null);
+        
+        // Log raw login request (for debugging)
+        if (showDebug) {
+          console.log('Login request:', { 
+            email: values.email, 
+            password: values.password 
+          });
+        }
+        
+        const response = await signIn(values.email, values.password);
+        
+        if (showDebug) {
+          setLoginResponse(JSON.stringify(response, null, 2));
+        }
+        
         router.push('/dashboard');
-      } catch (error) {
+      } catch (error: any) {
         console.error('Login error:', error);
-        setLoginError('Email o contraseña incorrectos');
+        setLoginError(error.message || 'Email o contraseña incorrectos');
+        
+        if (showDebug) {
+          setLoginResponse(JSON.stringify(error, null, 2));
+        }
       }
     },
   });
+  
+  // Login directly using the admin credentials
+  const loginWithAdmin = async () => {
+    try {
+      setLoginError('');
+      setLoginResponse(null);
+      
+      // Try direct API call to Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: 'codemaxon@gmail.com',
+        password: 'admin123'
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (showDebug) {
+        setLoginResponse(JSON.stringify(data, null, 2));
+      }
+      
+      router.push('/dashboard');
+    } catch (error: any) {
+      console.error('Admin login error:', error);
+      setLoginError(error.message || 'Error al iniciar sesión como admin');
+      
+      if (showDebug) {
+        setLoginResponse(JSON.stringify(error, null, 2));
+      }
+    }
+  };
 
   const handleClickShowPassword = () => {
     setShowPassword(!showPassword);
@@ -243,6 +300,17 @@ export default function Login() {
                   {formik.isSubmitting ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                 </Button>
                 
+                {/* Admin login button */}
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  color="primary"
+                  onClick={loginWithAdmin}
+                  sx={{ mb: 2 }}
+                >
+                  Iniciar sesión como Admin
+                </Button>
+                
                 <Divider sx={{ my: 3 }}>
                   <Typography variant="body2" color="text.secondary">
                     o
@@ -267,6 +335,43 @@ export default function Login() {
                     </Typography>
                   </Alert>
                 </Box>
+                
+                {/* Debug mode toggle */}
+                <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+                  <FormControlLabel
+                    control={
+                      <Switch 
+                        checked={showDebug} 
+                        onChange={() => setShowDebug(!showDebug)}
+                        size="small"
+                      />
+                    }
+                    label={
+                      <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+                        <BugReportIcon fontSize="small" sx={{ mr: 0.5 }} />
+                        Modo Diagnóstico
+                      </Typography>
+                    }
+                  />
+                </Box>
+                
+                {/* Debug info */}
+                {showDebug && (
+                  <Box sx={{ mt: 2 }}>
+                    <EnvDebug />
+                    
+                    {loginResponse && (
+                      <Paper sx={{ p: 2, mt: 2, maxHeight: 200, overflow: 'auto' }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                          Respuesta de autenticación:
+                        </Typography>
+                        <pre style={{ fontSize: '0.8rem', overflow: 'auto' }}>
+                          {loginResponse}
+                        </pre>
+                      </Paper>
+                    )}
+                  </Box>
+                )}
               </Box>
             </Card>
           </Fade>

@@ -4,8 +4,20 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
-// Create a single supabase client for the browser
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Create a single supabase client for the browser with improved options
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'pet-rescue-auth',
+  },
+});
+
+// Log the URL for debugging (will be visible in browser console)
+if (typeof window !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  console.log('Using Supabase URL:', supabaseUrl);
+}
 
 // Types for our database
 export type Profile = {
@@ -49,5 +61,10 @@ export type Pet = {
 export const createServerSupabaseClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error('Missing environment variables for server Supabase client');
+  }
+  
   return createClient(supabaseUrl, supabaseServiceKey);
 };
