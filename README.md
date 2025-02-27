@@ -1,67 +1,45 @@
-# 🐾 Pet Rescue App
+# Pet Rescue Supabase
 
-Aplicación web para publicar y gestionar información de mascotas callejeras o perdidas. Plataforma completa con funcionalidades para usuarios y administradores.
+Aplicación para facilitar la gestión de mascotas perdidas y en adopción utilizando Supabase como backend.
 
-## 📋 Tecnologías
+## Configuración inicial de la base de datos
 
-- **Next.js 14+**: Framework de React con renderizado del lado del servidor (SSR) y generación estática
-- **TypeScript**: Tipado estático para un desarrollo más robusto
-- **Supabase**: Base de datos, autenticación y almacenamiento de archivos
-- **Material UI**: Componentes estilizados para una interfaz de usuario moderna
-- **Leaflet**: Visualización de mapas interactivos
-- **Formik + Yup**: Gestión de formularios y validación
+Para configurar la base de datos en Supabase, sigue estos pasos:
 
-## ✨ Características
+1. Ve a [Supabase](https://supabase.com) e inicia sesión en tu cuenta
+2. Selecciona tu proyecto o crea uno nuevo
+3. Ve a la sección "SQL Editor"
+4. Ejecuta los scripts en el siguiente orden:
 
-### Generales
-- Registro e inicio de sesión de usuarios con Supabase Auth
-- Perfiles de usuario con datos de contacto e imagen
-- CRUD completo de publicaciones de mascotas con múltiples imágenes
-- Filtros avanzados y búsqueda
-- Paginación de resultados
-- Ubicación geográfica precisa con mapas
-- Interfaz de usuario moderna, responsive y adaptable
-- Modo oscuro/claro
-- Panel de administración con estadísticas
+### 1. Configuración de esquema y tablas
 
-### Usuario normal
-- Publicar información de mascotas encontradas con múltiples imágenes
-- Detalles extendidos sobre las mascotas (tamaño, género, edad, color)
-- Ver publicaciones de otros usuarios con filtros avanzados
-- Contactar con otros usuarios
-- Gestionar y actualizar sus propias publicaciones
-- Personalizar su perfil
+```sql
+-- Copiar el contenido del archivo setup_database.sql
+```
 
-### Administrador
-- Panel de administración completo
-- Estadísticas detalladas con gráficos
-- Gestión de publicaciones y estados
-- Gestión avanzada de usuarios
-- Moderar contenido inapropiado
+### 2. Creación del usuario administrador (opcional)
 
-## 🚀 Instalación
+```sql
+-- Copiar el contenido del archivo create_admin_user.sql
+```
 
-### Requisitos previos
-- Node.js (v18 o superior) y npm
-- Cuenta en Supabase
+## Uso del usuario administrador
 
-### Configuración del entorno
-1. Clona este repositorio
-2. Copia el archivo `.env.local.example` a `.env.local` y configura las variables de entorno con tus credenciales de Supabase
-3. Instala las dependencias: `npm install`
-4. Ejecuta el servidor de desarrollo: `npm run dev`
-5. Abre [http://localhost:3000](http://localhost:3000) en tu navegador
+Después de ejecutar los scripts, puedes iniciar sesión con las siguientes credenciales:
 
-## 📱 Funcionalidades móviles
-- Diseño completamente responsive
-- Interfaz optimizada para dispositivos móviles
-- Acceso a la cámara para tomar fotos directamente
-- Geolocalización para marcar ubicación actual
-
-## 👨‍💻 Credenciales de administrador
 - Email: codemaxon@gmail.com
 - Contraseña: admin123
 
-## 🌐 Despliegue
+## Estructura de la base de datos
 
-Esta aplicación puede desplegarse fácilmente en plataformas como Vercel o Netlify. Configura las variables de entorno necesarias en la plataforma de despliegue.
+### Tabla `profiles`
+Almacena información de los usuarios.
+
+### Tabla `pets`
+Contiene los registros de mascotas perdidas o en adopción con campos como:
+- Tipo de mascota (perro, gato, etc.)
+- Tamaño
+- Género
+- Edad
+- Ubicación
+- Estado (activo, inactivo, encontrado, adoptado)
